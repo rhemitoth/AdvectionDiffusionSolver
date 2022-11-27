@@ -25,38 +25,38 @@ def gaussian(x, mu, sigma):
 # Habitat Preference
 def preference(x):
     pi = math.pi
-    res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # sin preference
-    #res = 1 + 0.5*math.cos(x*pi/25) #cos preference
-    #res = math.exp(-abs(x-50)**2)
-    #res = 0.1 / (1 + math.exp(-(x-40))) #logistic preference
-    #res = 0.5 * math.exp(-6 * (abs(x-10)**2))
+    #res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # w1
+    #res = 1 + 0.5*math.cos(x*pi/25) # w2
+    res = math.exp(-0.01*abs(x-50)**2) # w3
+    #res = 0.1 / (1 + math.exp(-(x-40))) # w4
+    #res = 0.5 * math.exp(-6 * (abs(x-10)**2)) #w5
     res = np.float64(res)
     return res
 
 # Derivative of Habitat Preference Function
 def preference_slope(x):
     pi = math.pi
-    res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # sin preference
-    #res = -0.5*(pi/25)*math.sin(x*pi/25) #cos IC
-    #res = math.exp(-(x**2)+(100*x)-2500)*((-2*x)+100)
-    #res = (math.exp(-x+40) / ((1 + math.exp(40-x))**2))*0.1 #logistic preference
-    #res = -6 * math.exp(-6*(x-10)**2)*(x-10)
+    #res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # w1
+    #res = -0.5*(pi/25)*math.sin(x*pi/25) #w2
+    res = -0.02*math.exp(-0.01*(x-50)**2)*(x-50) #w3
+    #res = (math.exp(-x+40) / ((1 + math.exp(40-x))**2))*0.1 #w4
+    #res = -6 * math.exp(-6*(x-10)**2)*(x-10) #w5
     res = np.float64(res)
     return res
 
 #Model------------------------------------------------------------------------------------------------------------------
 # Bounds
 start = 0 # start bound
-stop = 50 # stop bound
+stop = 100 # stop bound
 
 
 # Model parameters
 dt = 0.01 # delta t
-dx = 0.01  # delta x
-T = 200 # Total time
+dx = 0.05  # delta x
+T = 1000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
-mean_sl = 0.0 #mean step length
+mean_sl = 0.04 #mean step length
 k = (mean_sl**2)/2/dt # diffusion coefficient equal to mean step length squared
 r = k * dt / dx / dx  # Fourier number
 
@@ -87,7 +87,7 @@ IC=[]
 for i in range(0, len(Xs)):
     x = Xs[i]
     res = gaussian(x = x,
-                   mu = 35,
+                   mu = 25,
                    sigma = 0.5) #Gaussin IC
     res = np.float64(res)
     IC.append(res)
@@ -103,8 +103,8 @@ if r > 0.5:
 # Central difference approximation for space derivative (order dx^2)
 
 for j in range(0,Nt-1):
-    if (((j/Nt) % 0.1 == 0)):
-        print(str(j/Nt * 100)," %")
+    if ((((j+1)/Nt) % 0.01 == 0)):
+        print(str((j+1)/Nt * 100)," %")
     for i in range(0,Nx+1):
         c = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection coefficient
         #Courant Number flag
@@ -153,25 +153,36 @@ t3 = u[int(0.6*Nt)][1]
 t4 = u[int(0.8*Nt)][1]
 t5 = u[int(Nt-1)][1]
 
-fig = plt.figure()
-
-camera = Camera(fig)
+fig_title = f"w(x) = exp(-0.1*|x|^2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
+fig1 = plt.figure()
+fig1.suptitle(fig_title, fontsize = 8)
+camera = Camera(fig1)
 for i in range(Nt):
     Ys= u[i][1]
     if i%500 == 0:
-        plt.plot(w[0][0], w[0][1])
+        plt.plot(w[0][0], w[0][1], color = "black")
         plt.plot(Xs,Ys, color = "blue")
         camera.snap()
 animation = camera.animate()
 animation.save('AdvectionDiffusion.mp4', writer = 'ffmpeg')
 
-#plt.plot(Xs,t0, label = 't0')
-#plt.plot(Xs,t1, label = 't1')
-#plt.plot(Xs,t2, label = 't2')
-#plt.plot(Xs,t3, label = 't3')
-#plt.plot(Xs,t4, label = 't4')
-#plt.plot(Xs,t5, label ='t5')
-plt.plot(w[0][0],w[0][1])
-#plt.text(5,0.7,"dt = 0.01 \n dx = 0.05 \n c = 0.1")
+fig2 = plt.figure()
+fig2.suptitle(fig_title, fontsize = 8)
+t0 = u[0][1]
+t1 = u[int(0.2*Nt)][1]
+t2 = u[int(0.4*Nt)][1]
+t3 = u[int(0.6*Nt)][1]
+t4 = u[int(0.8*Nt)][1]
+t5 = u[int(Nt-1)][1]
+plt.plot(w[0][0],w[0][1], color = "black")
+plt.plot(Xs,t0, label = 't0')
+plt.plot(Xs,t1, label = 't1')
+plt.plot(Xs,t2, label = 't2')
+plt.plot(Xs,t3, label = 't3')
+plt.plot(Xs,t4, label = 't4')
+plt.plot(Xs,t5, label ='t5')
+plt.legend(loc="upper right")
+plt.savefig("AdvectionDiffusion.png", dpi = 350)
 plt.show()
+
 
