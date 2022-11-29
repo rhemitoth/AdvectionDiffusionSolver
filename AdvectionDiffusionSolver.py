@@ -53,7 +53,7 @@ stop = 50 # stop bound
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 100 # Total time
+T = 1000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -87,7 +87,7 @@ IC=[]
 for i in range(0, len(Xs)):
     x = Xs[i]
     res = gaussian(x = x,
-                   mu = 25,
+                   mu = 30,
                    sigma = 0.5) #Gaussin IC
     res = np.float64(res)
     IC.append(res)
@@ -103,7 +103,7 @@ if r > 0.5:
 # Central difference approximation for space derivative (order dx^2)
 
 for j in range(0,Nt-1):
-    if ((((j+1)/Nt) % 0.01 == 0)):
+    if ((((j+1)/Nt)*100 % 1 == 0)):
         print(str((j+1)/Nt * 100)," %")
     for i in range(0,Nx+1):
         c = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection coefficient
@@ -166,17 +166,30 @@ t4 = u[int(0.8*Nt)][1]
 t5 = u[int(Nt-1)][1]
 
 fig_title = f"w(x) = exp(-0.1*|x|^2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
-fig1 = plt.figure()
-fig1.suptitle(fig_title, fontsize = 8)
+# fig1 = plt.figure()
+fig1, ax1 = plt.subplots()
+ax1.set_title(fig_title, fontsize = 8)
 camera = Camera(fig1)
 for i in range(Nt):
     Ys= u[i][1]
     if i%500 == 0:
-        plt.plot(w[0][0], w[0][1], color = "#5a5a5a", label = "w(x)", linestyle = "dashed")
-        plt.plot(Xs, Ys, color="#959e19", label="u(x,t)")
-        plt.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label = "steady state u(x,t)")
-        plt.legend(loc="upper right")
+        if i == 0:
+            ax1.plot(w[0][0], w[0][1], color = "#5a5a5a", label = "w(x)", linestyle = "dashed")
+            x = ax1.plot(Xs, Ys, color="#959e19", label="u(x,t)")
+            y = ax1.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label = "steady state u(x,t)")
+            # ax1.legend(loc="upper right")
+        else:
+            ax1.plot(w[0][0], w[0][1], color="#5a5a5a", linestyle="dashed")
+            x = ax1.plot(Xs, Ys, color="#959e19")
+            y = ax1.plot(Xs, steady_state_u[0][1], color='black', linestyle='dotted')
+        ax1.legend(loc="upper right")
+
         camera.snap()
+
+        # handles, labels = ax1.get_legend_handles_labels()
+        # labels = []
+        # ax1.get_legend().remove() #nope
+        # ax1.clear() #doesn't work
 animation = camera.animate()
 animation.save('AdvectionDiffusion.mp4', writer = 'ffmpeg')
 

@@ -53,7 +53,7 @@ stop = 50 # stop bound
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 100 # Total time
+T = 500 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.05 #mean step length
@@ -100,14 +100,14 @@ for j in range(0,Nt-1):
     if (((j/Nt) % 0.1 == 0)):
         print(str(j/Nt * 100)," %")
     for i in range(0,Nx+1):
-        c = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection coefficient
-        #c=0.1
+        #c = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection coefficient
+        c=0.1
         p = c * dt / dx /2 # Courant number
         #if c > 0:
-          #  if i == 0:
-               # u[j+1][1][i] = u[j][1][i] - p * (u[j][1][i] - u[j][1][-1])
-           # else:
-            #    u[j + 1][1][i] = u[j][1][i] - p * (u[j][1][i] - u[j][1][i - 1])
+            #if i == 0:
+                #u[j+1][1][i] = u[j][1][i] - p * (u[j][1][i] - u[j][1][-1])
+            #else:
+                #u[j + 1][1][i] = u[j][1][i] - p * (u[j][1][i] - u[j][1][i - 1])
         if c > 0:
             if i == 0:
                 u[j + 1][1][i] = -p * (3*u[j][1][i] - 4 * u[j][1][Nx] + u[j][1][Nx-1]) + u[j][1][i]
