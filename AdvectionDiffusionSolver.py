@@ -25,9 +25,9 @@ def gaussian(x, mu, sigma):
 # Habitat Preference
 def preference(x):
     pi = math.pi
-    res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # w1
+    #res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # w1
     #res = 1 + 0.5*math.cos(x*pi/25) # w2
-    #res = math.exp(-0.01*abs(x-50)**2) # w3
+    res = math.exp(-0.01*abs(x-50)**2) # w3
     #res = 0.1 / (1 + math.exp(-(x-40))) # w4
     #res = 0.5 * math.exp(-6 * (abs(x-10)**2)) #w5
     res = np.float64(res)
@@ -36,9 +36,9 @@ def preference(x):
 # Derivative of Habitat Preference Function
 def preference_slope(x):
     pi = math.pi
-    res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # w1
+    #res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # w1
     #res = -0.5*(pi/25)*math.sin(x*pi/25) #w2
-    #res = -0.02*math.exp(-0.01*(x-50)**2)*(x-50) #w3
+    res = -0.02*math.exp(-0.01*(x-50)**2)*(x-50) #w3
     #res = (math.exp(-x+40) / ((1 + math.exp(40-x))**2))*0.1 #w4
     #res = -6 * math.exp(-6*(x-10)**2)*(x-10) #w5
     res = np.float64(res)
@@ -47,13 +47,13 @@ def preference_slope(x):
 #Model------------------------------------------------------------------------------------------------------------------
 # Bounds
 start = 0 # start bound
-stop = 50 # stop bound
+stop = 100 # stop bound
 
 
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 1000 # Total time
+T = 5000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -87,7 +87,7 @@ IC=[]
 for i in range(0, len(Xs)):
     x = Xs[i]
     res = gaussian(x = x,
-                   mu = 30,
+                   mu = 10,
                    sigma = 0.5) #Gaussin IC
     res = np.float64(res)
     IC.append(res)
@@ -165,7 +165,8 @@ t3 = u[int(0.6*Nt)][1]
 t4 = u[int(0.8*Nt)][1]
 t5 = u[int(Nt-1)][1]
 
-fig_title = f"w(x) = exp(-0.1*|x|^2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
+fig_title = r"$\mathrm{w(x)} = {{\mathrm{e}^{-0.01|x-50|}}}^{2}$"+f"\n dx = {dx}, dt = {dt}, MSL = {mean_sl}"
+#fig_title = f"math.exp(-0.01*abs(x-50)**2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
 # fig1 = plt.figure()
 fig1, ax1 = plt.subplots()
 ax1.set_title(fig_title, fontsize = 8)
@@ -201,14 +202,14 @@ t2 = u[int(0.4*Nt)][1]
 t3 = u[int(0.6*Nt)][1]
 t4 = u[int(0.8*Nt)][1]
 t5 = u[int(Nt-1)][1]
-plt.plot(Xs,w[0][1], color = "#5a5a5a", label = "w(x)", linestyle = "dashed")
-plt.plot(Xs,t0, label = 'u(x,0)', color = "#003f5c" )
-plt.plot(Xs,t1, label = f'u(x,{int(0.2*Nt)})', color = "#444e86")
-plt.plot(Xs,t2, label = f'u(x,{int(0.4*Nt)})', color = "#955196")
-plt.plot(Xs,t3, label = f'u(x,{int(0.6*Nt)})', color = "#dd5182")
-plt.plot(Xs,t4, label = f'u(x,{int(0.8*Nt)})', color = "#ff6e54")
-plt.plot(Xs,t5, label =f'u(x,{int(Nt-1)})', color = "#ffa600")
-plt.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label = "steady state u(x,t)")
+plt.plot(Xs,w[0][1], color = "#5a5a5a", label = r"$w(x)$", linestyle = "dashed")
+plt.plot(Xs,t0, label = r'$u(x,0)$', color = "#003f5c" )
+plt.plot(Xs,t1, label = fr'$u(x,{int(0.2*Nt)})$', color = "#444e86")
+plt.plot(Xs,t2, label = fr'$u(x,{int(0.4*Nt)})$', color = "#955196")
+plt.plot(Xs,t3, label = fr'$u(x,{int(0.6*Nt)})$', color = "#dd5182")
+plt.plot(Xs,t4, label = fr'$u(x,{int(0.8*Nt)})$', color = "#ff6e54")
+plt.plot(Xs,t5, label =fr'$u(x,{int(Nt-1)})$', color = "#ffa600")
+plt.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label = r"$u^{*}(x)$")
 plt.legend(loc="upper right")
 plt.savefig("AdvectionDiffusion.png", dpi = 350)
 plt.show()
