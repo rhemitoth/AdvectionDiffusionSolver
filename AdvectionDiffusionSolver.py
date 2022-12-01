@@ -120,7 +120,7 @@ for j in range(0,Nt-1):
                 u[j + 1][1][i] = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][i - 2]) + u[j][1][i]
             else:
                 u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) -p * (3*u[j][1][i] - 4 * u[j][1][i-1] + u[j][1][i-2]) + u[j][1][i]
-        else:
+        elif c < 0:
             if i == Nx:
                 u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][1] + 4 * u[j][1][0] - 3 * u[j][1][Nx]) + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
             elif i == (Nx-1):
@@ -129,6 +129,13 @@ for j in range(0,Nt-1):
                 u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i + 2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
             else:
                 u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i+2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+        else:
+            if i == 0:
+                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
+            elif i == Nx:
+                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
+            else:
+                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
     area = integrate(u = u[j + 1][1],
                      dx = dx,
                      x_vals = Xs)
@@ -143,14 +150,13 @@ for j in range(0,Nt):
     print(res)
 
 #Approximating the steady state space use
-w0 = integrate(u = w[0][1],
+w0 = integrate(u = (w[0][1]**2),
                dx = dx,
                x_vals = Xs)
 steady_state_u = np.zeros((1,2,len(Xs)))
 steady_state_u[0][0] = Xs
-for i in range(0,len(Xs)):
-    res = (w[0][1][i]**2)/w0
-    steady_state_u[0][1][i] = res
+steady_state_u[0][1] = (w[0][1]**2)/w0
+
 
 
 #Checking for conservation
