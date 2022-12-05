@@ -25,35 +25,29 @@ def gaussian(x, mu, sigma):
 # Habitat Preference
 def preference(x):
     pi = math.pi
-    #res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # w1
-    #res = 1 + 0.5*math.cos(x*pi/25) # w2
-    res = math.exp(-0.01*abs(x-50)**2) # w3
-    #res = 0.1 / (1 + math.exp(-(x-40))) # w4
-    #res = 0.5 * math.exp(-6 * (abs(x-10)**2)) #w5
+    res = 0.1 + math.sin(2 * pi * x / 50) ** 2  # Example 1
+    #res = math.exp(-0.01*abs(x-50)**2) # Example 2
     res = np.float64(res)
     return res
 
 # Derivative of Habitat Preference Function
 def preference_slope(x):
     pi = math.pi
-    #res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # w1
-    #res = -0.5*(pi/25)*math.sin(x*pi/25) #w2
-    res = -0.02*math.exp(-0.01*(x-50)**2)*(x-50) #w3
-    #res = (math.exp(-x+40) / ((1 + math.exp(40-x))**2))*0.1 #w4
-    #res = -6 * math.exp(-6*(x-10)**2)*(x-10) #w5
+    res = (2 * pi / 25) * math.cos(pi * x / 25) * math.sin(pi * x / 25)  # Example 1
+    #res = -0.02*math.exp(-0.01*(x-50)**2)*(x-50) # Example 2
     res = np.float64(res)
     return res
 
 #Model------------------------------------------------------------------------------------------------------------------
 # Bounds
 start = 0 # start bound
-stop = 100 # stop bound
+stop = 50 # stop bound
 
 
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 5000 # Total time
+T = 10000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -87,7 +81,7 @@ IC=[]
 for i in range(0, len(Xs)):
     x = Xs[i]
     res = gaussian(x = x,
-                   mu = 10,
+                   mu = 28,
                    sigma = 0.5) #Gaussin IC
     res = np.float64(res)
     IC.append(res)
@@ -171,7 +165,7 @@ t3 = u[int(0.6*Nt)][1]
 t4 = u[int(0.8*Nt)][1]
 t5 = u[int(Nt-1)][1]
 
-fig_title = r"$\mathrm{w(x)} = {{\mathrm{e}^{-0.01|x-50|}}}^{2}$"+f"\n dx = {dx}, dt = {dt}, MSL = {mean_sl}"
+fig_title = r"$w(x) = 0.1 + \sin^2\left({\frac{2\pi x}{50}}\right)$" +f"\n dx = {dx}, dt = {dt}, MSL = {mean_sl}"
 #fig_title = f"math.exp(-0.01*abs(x-50)**2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
 # fig1 = plt.figure()
 fig1, ax1 = plt.subplots()
