@@ -47,7 +47,7 @@ stop = 50 # stop bound
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 10000 # Total time
+T = 100 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -76,32 +76,28 @@ for i in range(0,len(Xs)):
 for j in range(0, Nt):
     u[j][0]=Xs
 
-#Setting Initial Condition
+# Setting Initial Condition
 IC=[]
 for i in range(0, len(Xs)):
     x = Xs[i]
     res = gaussian(x = x,
                    mu = 28,
-                   sigma = 0.5) #Gaussin IC
+                   sigma = 0.5) # Gaussin IC
     res = np.float64(res)
     IC.append(res)
-u[0][1] = IC #Populating initial condition in array u
+u[0][1] = IC # Populating initial condition in array u
 
-#Fourier Number Flag
+# Fourier Number Flag
 if r > 0.5:
     print("Fourier Number " + str(r) +  " > 0.5. Adjust mean step length, dx, or dt")
 
-#Explicit Finite Difference Scheme
-# Periodic Boundary Conditions/Zero Flux
-# Forward difference approximation for time derivative (order dt)
-# Central difference approximation for space derivative (order dx^2)
-
+# Finite difference scheme
 for j in range(0,Nt-1):
     if ((((j+1)/Nt)*100 % 1 == 0)):
         print(str((j+1)/Nt * 100)," %")
     for i in range(0,Nx+1):
         c = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection coefficient
-        #Courant Number flag
+        # Courant Number flag
         p = c * dt / dx /2 # Courant number
         if p > 1:
             print("Courant number > 1. Adjust mean step length, preference function, dx, or dt")
@@ -144,6 +140,7 @@ for j in range(0,Nt):
     print(res)
 
 #Approximating the steady state space use
+
 w0 = integrate(u = (w[0][1]**2),
                dx = dx,
                x_vals = Xs)
@@ -151,25 +148,8 @@ steady_state_u = np.zeros((1,2,len(Xs)))
 steady_state_u[0][0] = Xs
 steady_state_u[0][1] = (w[0][1]**2)/w0
 
-
-
-#Checking for conservation
-#for j in range(0,Nt):
-    #integrate(u=u,dx=dx)
-
-#Ploting u(x,t) at T = 1, 2, 3, 4, and 5
-t0 = u[0][1]
-t1 = u[int(0.2*Nt)][1]
-t2 = u[int(0.4*Nt)][1]
-t3 = u[int(0.6*Nt)][1]
-t4 = u[int(0.8*Nt)][1]
-t5 = u[int(Nt-1)][1]
-
-fig_title = r"$w(x) = 0.1 + \sin^2\left({\frac{2\pi x}{50}}\right)$" +f"\n dx = {dx}, dt = {dt}, MSL = {mean_sl}"
-#fig_title = f"math.exp(-0.01*abs(x-50)**2) \n dx = {dx}, dt = {dt}, mean sl = {mean_sl}"
-# fig1 = plt.figure()
+# Animation
 fig1, ax1 = plt.subplots()
-ax1.set_title(fig_title, fontsize = 8)
 camera = Camera(fig1)
 for i in range(Nt):
     Ys= u[i][1]
@@ -178,7 +158,6 @@ for i in range(Nt):
             ax1.plot(w[0][0], w[0][1], color = "#5a5a5a", label = "w(x)", linestyle = "dashed")
             x = ax1.plot(Xs, Ys, color="#959e19", label="u(x,t)")
             y = ax1.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label = "steady state u(x,t)")
-            # ax1.legend(loc="upper right")
         else:
             ax1.plot(w[0][0], w[0][1], color="#5a5a5a", linestyle="dashed")
             x = ax1.plot(Xs, Ys, color="#959e19")
@@ -186,16 +165,11 @@ for i in range(Nt):
         ax1.legend(loc="upper right")
 
         camera.snap()
-
-        # handles, labels = ax1.get_legend_handles_labels()
-        # labels = []
-        # ax1.get_legend().remove() #nope
-        # ax1.clear() #doesn't work
 animation = camera.animate()
 animation.save('AdvectionDiffusion.mp4', writer = 'ffmpeg')
 
+# Plot
 fig2 = plt.figure()
-fig2.suptitle(fig_title, fontsize = 8)
 t0 = u[0][1]
 t1 = u[int(0.2*Nt)][1]
 t2 = u[int(0.4*Nt)][1]
@@ -213,5 +187,6 @@ plt.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label =
 plt.legend(loc="upper right")
 plt.savefig("AdvectionDiffusion.png", dpi = 350)
 plt.show()
+
 
 
