@@ -47,7 +47,7 @@ stop = 50 # stop bound
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 100 # Total time
+T = 10000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -92,11 +92,13 @@ if r > 0.5:
     print("Fourier Number " + str(r) +  " > 0.5. Adjust mean step length, dx, or dt")
 
 # Finite difference scheme
+velocity_dif_signs = 0
 for j in range(0,Nt-1):
     if ((((j+1)/Nt)*100 % 1 == 0)):
         print(str((j+1)/Nt * 100)," %")
-    for i in range(0,Nx+1):
+    for i in range(0,Nx-1):
         c_x = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt  # Advection
+        p = dt / dx / 2
 
         if i == 0:
             c_xminus1 = (mean_sl**2) * wx[0][1][-1] / w[0][1][-1] / dt
@@ -111,41 +113,85 @@ for j in range(0,Nt-1):
         if i == Nt:
             c_xplus1 = (mean_sl**2) * wx[0][1][0] / w[0][1][0] / dt
             c_xplus2 = (mean_sl**2) * wx[0][1][1] / w[0][1][1] / dt
-        elif i == Nt - 1:
+        elif i == (Nt - 1):
             c_xplus1 = (mean_sl ** 2) * wx[0][1][-1] / w[0][1][-1] / dt
             c_xplus2 = (mean_sl ** 2) * wx[0][1][0] / w[0][1][0] / dt
         else:
             c_xplus1 = (mean_sl ** 2) * wx[0][1][i+1] / w[0][1][i+1] / dt
             c_xplus2 = (mean_sl ** 2) * wx[0][1][i+2] / w[0][1][i+2] / dt
-        # Courant Number flag
-        p = c * dt / dx /2 # Courant number
-        if p > 1:
-            print("Courant number > 1. Adjust mean step length, preference function, dx, or dt")
-        if c > 0:
+
+        if c_x > 0 and c_xminus1 > 0 and c_xminus2 > 0:
+            #print("all velocities positive")
             if i == 0:
-                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx]) -p * (3*u[j][1][i] - 4 * u[j][1][Nx] + u[j][1][Nx-1]) + u[j][1][i]
+                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx]) -p * (3* c_x * u[j][1][i] -
+                                                                                           4 * c_xminus1 * u[j][1][Nx] +
+                                                                                           c_xminus2 * u[j][1][Nx-1]) + u[j][1][i]
             elif i == 1:
-                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) -p * (3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][Nx]) + u[j][1][i]
+                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) -p * (3 * c_x * u[j][1][i] -
+                                                                                              4 * c_xminus1 * u[j][1][i - 1] +
+                                                                                              c_xminus2 * u[j][1][Nx]) + u[j][1][i]
             elif i == Nx:
-                u[j + 1][1][i] = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][i - 2]) + u[j][1][i]
+                u[j + 1][1][i] = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (3 * c_x * u[j][1][i] -
+                                                                                           4 * c_xminus1 * u[j][1][i - 1] +
+                                                                                           c_xminus2 * u[j][1][i - 2]) + u[j][1][i]
             else:
-                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) -p * (3*u[j][1][i] - 4 * u[j][1][i-1] + u[j][1][i-2]) + u[j][1][i]
-        elif c < 0:
+                u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) -p * (3 * c_x * u[j][1][i] -
+                                                                                              4 * c_xminus1 * u[j][1][i - 1] +
+                                                                                              c_xminus2 * u[j][1][i-2]) + u[j][1][i]
+        elif c_x < 0 and c_xplus1 < 0 and c_xplus2 < 0:
+            #print("all velocities negative")
             if i == Nx:
-                u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][1] + 4 * u[j][1][0] - 3 * u[j][1][Nx]) + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
+                u[j + 1][1][i] = u[j][1][i] - p * (-c_xplus2 * u[j][1][1] +
+                                                   4 * c_xplus1 * u[j][1][0] -
+                                                   3 * c_x * u[j][1][Nx]) + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
             elif i == (Nx-1):
-                u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][0] + 4 * u[j][1][Nx] - 3 * u[j][1][Nx-1]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+                u[j + 1][1][i] = u[j][1][i] - p * (-c_xplus2 * u[j][1][0] +
+                                                   4 * c_xplus1 * u[j][1][Nx] -
+                                                   3 * c_x * [j][1][Nx-1]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
             elif i == 0:
-                u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i + 2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
+                u[j + 1][1][i] = u[j][1][i] - p * (-c_xplus2 * u[j][1][i + 2] +
+                                                   4 * c_xplus1 * u[j][1][i + 1] -
+                                                   3 * c_x * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
             else:
-                u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i+2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+                u[j + 1][1][i] = u[j][1][i] - p * (-c_xplus2 * u[j][1][i+2] +
+                                                   4 * c_xplus1 * u[j][1][i + 1] -
+                                                   3 * c_x * u[j][1][i]) + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
         else:
-            if i == 0:
-                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
-            elif i == Nx:
-                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
+            c = c_x
+            if c > 0:
+                if i == 0:
+                    u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx]) - p * (
+                                3 * u[j][1][i] - 4 * u[j][1][Nx] + u[j][1][Nx - 1]) + u[j][1][i]
+                elif i == 1:
+                    u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (
+                                3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][Nx]) + u[j][1][i]
+                elif i == Nx:
+                    u[j + 1][1][i] = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (
+                                3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][i - 2]) + u[j][1][i]
+                else:
+                    u[j + 1][1][i] = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1]) - p * (
+                                3 * u[j][1][i] - 4 * u[j][1][i - 1] + u[j][1][i - 2]) + u[j][1][i]
+            elif c < 0:
+                if i == Nx:
+                    u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][1] + 4 * u[j][1][0] - 3 * u[j][1][Nx]) + r * (
+                                u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
+                elif i == (Nx - 1):
+                    u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][0] + 4 * u[j][1][Nx] - 3 * u[j][1][Nx - 1]) + r * (
+                                u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+                elif i == 0:
+                    u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i + 2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (
+                                u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
+                else:
+                    u[j + 1][1][i] = u[j][1][i] - p * (-u[j][1][i + 2] + 4 * u[j][1][i + 1] - 3 * u[j][1][i]) + r * (
+                                u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
             else:
-                u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+                if i == 0:
+                    u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
+                elif i == Nx:
+                    u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
+                else:
+                    u[j + 1][1][i] = u[j][1][i] + r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
+
     area = integrate(u = u[j + 1][1],
                      dx = dx,
                      x_vals = Xs)
@@ -159,6 +205,7 @@ for j in range(0,Nt):
               x_vals = Xs)
     print(res)
 
+print("Number of iterations where velocities had different signs: ", str(velocity_dif_signs))
 #Approximating the steady state space use
 
 w0 = integrate(u = (w[0][1]**2),
