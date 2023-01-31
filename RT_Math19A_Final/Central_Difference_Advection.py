@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[26]:
+# In[18]:
 
 
 #Modules
@@ -11,7 +11,7 @@ import math
 from celluloid import Camera
 
 
-# In[41]:
+# In[46]:
 
 
 #Custom Functions
@@ -57,33 +57,34 @@ def preference_slope_slope(x):
 
 #Normalized RMSE
 
-def nrmse(model, true, nx, t):
+def rmse(model, true, nx, t):
     summation = 0
     for i in range(0,nx):
         dif = (model[t][1][i] - true[0][1][i])**2
         summation = summation + dif
     rmse = (summation/nx)**0.5
-    nrmse = rmse/(max(true[0][1]) - min(true[0][1]))
-    return abs(nrmse)
+    return abs(rmse)
 
 #Convergence Flag
 
-def converge(current_t, t_minus10000, t_minus20000):
+def converge(current_t, t_minus1000, t_minus2000):
     #function to determine whether finite difference scheme has convered
     #inputs are rows of an array
-    current_t = current_t ** 0.1
-    t_minus10000 = t_minus10000 ** 0.1
-    t_minus20000 = t_minus20000 ** 0.1
-    h1 = abs((t_minus10000) - abs(t_minus20000))
-    h2 = abs((current_t) - abs(t_minus10000))
-    if h1.all() == h2.all():
+    current_t = np.float128(current_t ** 0.01)
+    t_minus50 = np.float128(t_minus1000 ** 0.01)
+    t_minus100 = np.float128(t_minus2000 ** 0.01)
+    h1 = abs(t_minus1000 - t_minus2000)
+    print(h1)
+    h2 = abs(current_t - t_minus1000)
+    print(h2)
+    dif = abs(h1-h2)
+    print(dif)
+    cuttoff = np.format_float_scientific(np.float128(1e-128), unique=False, precision=128)
+    mask = dif>np.float128(cuttoff)
+    print(mask)
+    if True not in mask:
+        print("yes")
         return True
-    
-
-
-# In[34]:
-
-
 #Model Settings
 
 # Bounds
@@ -94,7 +95,7 @@ stop = 50 # stop bound
 # Model parameters
 dt = 0.01 # delta t
 dx = 0.05  # delta x
-T = 20000 # Total time
+T = 2 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -104,10 +105,6 @@ r = k * dt / dx / dx  # Fourier number
 # Fourier Number Flag
 if r > 0.5:
     print("Fourier Number " + str(r) +  " > 0.5. Adjust mean step length, dx, or dt")
-
-
-# In[35]:
-
 
 # Initializing x values where u(x,t) will be calculated
 Xs = np.arange(start, stop + dx, dx)
@@ -138,7 +135,7 @@ for j in range(0, Nt):
     u[j][0]=Xs
 
 
-# In[36]:
+# In[22]:
 
 
 #Approximating the steady state space use
@@ -151,7 +148,7 @@ steady_state_u[0][0] = Xs
 steady_state_u[0][1] = (w[0][1]**2)/w0
 
 
-# In[37]:
+# In[23]:
 
 
 # Setting Initial Condition
@@ -166,20 +163,18 @@ for i in range(0, len(Xs)):
 u[0][1] = IC # Populating initial condition in array u
 
 
-# In[42]:
+# In[26]:
 
 
 #Finite Difference Scheme
 
 for j in range(0,Nt-1):
-    if ((((j+1)/Nt)*100 % 1 == 0)):
-        print(str((j+1)/Nt * 100)," %")
     for i in range(0,Nx-1):
         
         #Defining velocity at u[i], u[i-1], u[i-2],u[i+1],and u[i+2]
         
         c_x = (mean_sl**2) * wx[0][1][i] / w[0][1][i] / dt 
-        cx_x = (mean_sl**2)/dt * (wxx[0][1][i]*w[0][1][i]-wx[0][1][i]**2) / w[0][1][i]**2
+        cx_x = (mean_sl**2)/dt * (wxx[0][1][i]*w[0][1][i]-wx[0][1][i]**2) / (w[0][1][i]**2)
   
         if i == 0:
             
@@ -214,38 +209,27 @@ for j in range(0,Nt-1):
         
         #Calcutlting u(x) at future timesteps
         
-        p = dt / dx / 2
         
         if c_x > 0 and c_xminus1 > 0 and c_xminus2 > 0:
             if i == 0:
                 
                 diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
-                advection = -p * (3* c_x * u[j][1][i] - 4 * c_xminus1 * u[j][1][Nx] + c_xminus2 * u[j][1][Nx-1]) 
-                - cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(3* c_x * u[j][1][i] - 4 * c_xminus1 * u[j][1][Nx] + c_xminus2 * u[j][1][Nx-1]))
+               
                 
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection
                 
             elif i == 1:
                 
                 diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = -p * (3 * c_x * u[j][1][i] - 4 * c_xminus1 * u[j][1][i - 1] + c_xminus2 * u[j][1][Nx]) 
-                - cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(3* c_x * u[j][1][i] - 4 * c_xminus1 * u[j][1][i-1] + c_xminus2 * u[j][1][Nx]))
                 
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection
-          
-            elif i == Nx:
-                
-                diffusion = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = - p * (3 * c_x * u[j][1][i] -4 * c_xminus1 * u[j][1][i - 1] + c_xminus2 * u[j][1][i - 2]) 
-                - dt*cx_x*u[j][1][i]
-                
-                u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
             
             else:
                 
                 diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = -p * (3 * c_x * u[j][1][i] -4 * c_xminus1 * u[j][1][i - 1] + c_xminus2 * u[j][1][i-2]) 
-                - cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(3* c_x * u[j][1][i] - 4 * c_xminus1 * u[j][1][i-1] + c_xminus2 * u[j][1][i-2])) 
                 
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
         
@@ -253,52 +237,42 @@ for j in range(0,Nt-1):
             if i == Nx:
                 
                 diffusion = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = - p * (-c_xplus2 * u[j][1][1] +4 * c_xplus1 * u[j][1][0] - 3 * c_x * u[j][1][Nx]) 
-                -cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(-c_xplus2 * u[j][1][1] +4 * c_xplus1 * u[j][1][0] - 3 * c_x * u[j][1][i])) 
                
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection
                 
             elif i == (Nx-1):
                 
                 diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = - p * (-c_xplus2 * u[j][1][0] + 4 * c_xplus1 * u[j][1][Nx] - 3 * c_x * [j][1][Nx-1]) 
-                -cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(-c_xplus2 * u[j][1][0] +4 * c_xplus1 * u[j][1][i+1] - 3 * c_x * u[j][1][i]))
                 
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
            
-            elif i == 0:
-                
-                diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][Nx])
-                advection = - p * (-c_xplus2 * u[j][1][i + 2] + 4 * c_xplus1 * u[j][1][i + 1] - 3 * c_x * u[j][1][i]) 
-                -cx_x*u[j][1][i]
-                
-                u[j + 1][1][i] = u[j][1][i] + diffusion + advection
-                
             else:
                 
                 diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
-                advection = - p * (-c_xplus2 * u[j][1][i+2] +  4 * c_xplus1 * u[j][1][i + 1] - 3 * c_x * u[j][1][i]) 
-                -cx_x*u[j][1][i]
+                advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(-c_xplus2 * u[j][1][i+2] +4 * c_xplus1 * u[j][1][i+1] - 3 * c_x * u[j][1][i]))
+                
                 u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
        
     else:
         if i == 0:
             diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][-1])
-            advection = -p * (c_xplus1 * u[j][1][i + 1] - c_xminus1 * u[j][1][-1])
+            advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(c_xplus1 * u[j][1][i + 1] - c_xminus1 * u[j][1][-1]))
                     
             u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
         
         elif i == Nx:
             
             diffusion = r * (u[j][1][0] - 2 * u[j][1][i] + u[j][1][i - 1])
-            advection = -p * (c_xplus1 * u[j][1][0] - c_xminus1 * u[j][1][i-1])
+            advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(c_xplus1 * u[j][1][0] - c_xminus1 * u[j][1][i-1]))
                     
             u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
 
         else:
             
             diffusion = r * (u[j][1][i + 1] - 2 * u[j][1][i] + u[j][1][i - 1])
-            advection = -p * (c_xplus1 * u[j][1][i + 1] - c_xminus1 * u[j][1][i-1])
+            advection = -dt*(cx_x*u[j][1][i] + (1/(2*dx))*(c_xplus1 * u[j][1][i+1] - c_xminus1 * u[j][1][i-1]))
                     
             u[j + 1][1][i] = u[j][1][i] + diffusion + advection 
 
@@ -308,30 +282,35 @@ for j in range(0,Nt-1):
                      x_vals = Xs)
     u[j+1][1] = u[j+1][1]/area
     
-    
-    # if j >= 20000:
-    #     converge_YN = converge(current_t = u[j][1],
-    #                           t_minus10000 = u[j-10000][1],
-    #                           t_minus20000 = u[j-20000][1])
-    #     if converge_YN == True:
-    #         print("Model Converged")
-    #         break
+    percent_comp = ((j+2)/(Nt))*100
+    if ( percent_comp % 1 == 0):
+        print(str(percent_comp)," %")
+    if(percent_comp % 10 == 0):
+        filename = "/Users/rhemitoth/Documents/Fall 2022/Math 19a/finalproject/RT_Math19A_Final/np_checkpoints/checkpoint{var}".format(var = str(percent_comp))
+        np.save(filename, u)
+    if j >= 2000:
+        converge_YN = converge(current_t = u[j][1],
+                              t_minus1000 = u[j-1000][1],
+                              t_minus2000 = u[j-2000][1])
+        if converge_YN == True:
+            print("Model Converged")
+            break
     
 
 
-# In[43]:
+# In[163]:
 
 
 #Normalized Root Mean Squared Error
-error = nrmse(model = u,
+error = rmse(model = u,
            true = steady_state_u,
            nx = Nx,
            t = Nt-1)
 
-print("Normalized Root Mean Squared Error = " + str(error))
+print("Root Mean Squared Error = " + str(error))
 
 
-# In[116]:
+# In[155]:
 
 
 #Checking for conservation
@@ -342,7 +321,7 @@ res = integrate(u = u[Nt-1][1],
 print(res)
 
 
-# In[ ]:
+# In[156]:
 
 
 # Animation
@@ -350,7 +329,7 @@ fig1, ax1 = plt.subplots()
 camera = Camera(fig1)
 for i in range(Nt):
     Ys= u[i][1]
-    if i%500 == 0:
+    if i%1000 == 0:
         if i == 0:
             ax1.plot(w[0][0], w[0][1], color = "#5a5a5a", label = "w(x)", linestyle = "dashed")
             x = ax1.plot(Xs, Ys, color="#959e19", label="u(x,t)")
@@ -366,7 +345,7 @@ animation = camera.animate()
 animation.save('AdvectionDiffusion_CDA.mp4', writer = 'ffmpeg')
 
 
-# In[120]:
+# In[157]:
 
 
 # Plot
@@ -388,16 +367,4 @@ plt.plot(Xs,steady_state_u[0][1], color = 'black', linestyle = 'dotted', label =
 plt.legend(loc="upper right")
 plt.savefig("AdvectionDiffusion.png", dpi = 350)
 plt.show()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
