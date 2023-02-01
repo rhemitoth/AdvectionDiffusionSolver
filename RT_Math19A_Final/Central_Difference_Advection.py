@@ -74,14 +74,10 @@ def converge(current_t, t_minus1000, t_minus2000):
     t_minus50 = np.float128(t_minus1000 ** 0.01)
     t_minus100 = np.float128(t_minus2000 ** 0.01)
     h1 = abs(t_minus1000 - t_minus2000)
-    print(h1)
     h2 = abs(current_t - t_minus1000)
-    print(h2)
     dif = abs(h1-h2)
-    print(dif)
     cuttoff = np.format_float_scientific(np.float128(1e-128), unique=False, precision=128)
     mask = dif>np.float128(cuttoff)
-    print(mask)
     if True not in mask:
         print("yes")
         return True
@@ -93,9 +89,9 @@ stop = 50 # stop bound
 
 
 # Model parameters
-dt = 0.01 # delta t
+dt = 0.1 # delta t
 dx = 0.05  # delta x
-T = 2 # Total time
+T = 40000 # Total time
 Nt = int(T / dt)  # Number of time steps
 Nx = int((abs(stop-start))/dx)  # Number of x steps
 mean_sl = 0.04 #mean step length
@@ -342,7 +338,7 @@ for i in range(Nt):
 
         camera.snap()
 animation = camera.animate()
-animation.save('AdvectionDiffusion_CDA.mp4', writer = 'ffmpeg')
+animation.save('AdvectionDiffusion_CDA_fast.mp4', writer = 'ffmpeg')
 
 
 # In[157]:
